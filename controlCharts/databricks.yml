@@ -1,0 +1,78 @@
+# Databricks Asset Bundle configuration, more info here: https://docs.databricks.com/en/dev-tools/bundles/settings.html
+bundle:
+  name: "controlCharts"
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+# Variable declarations. These variables are assigned in the dev/prod targets below.
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+  serverless_environment_version: 
+    default: "4"
+    description: The Serverless Environment version to use with serverless workflows.  
+  run_as_user:
+    default: "matthew.giglia@databricks.com"
+    description: The principal the workflow and pipelines should run as.  
+  tags_parentProject: 
+    default: mkgs-databricks-demos
+    description: The name of the parent project used for tagging deployed resources. 
+  tags_project:
+    default: AIBI Control Charts
+    description: The name of the project/subproject used for tagging deployed resources.
+  tags_businessUnit: 
+    default: "Healthcare and Life Sciences"
+    description: The business or accounting unit assigned.  
+  tags_RemoveAfter: 
+    default: 2027-01-07
+    description: Date the resources may be destroyed safely.  Defaults to one year after deployment. 
+  tags_developer: 
+    default: matthew.giglia@databricks.com
+    description: Original developer or developers for Ops contacts
+  tags_requestedBy:
+    default: Databricks
+    description: Team, company or stakeholders that requested the project.  
+  deployment_mode: 
+    default: production
+    description: Sets the target's mode value in the target and allows it to be references in other specification yamls such as in job parameters.  
+
+targets:
+  # The 'dev' target, for development purposes. This target is the default.
+  dev:
+    mode: development
+    presets:
+      # name_prefix: '[${bundle.target} ${workspace.current_user.short_name}] '
+      source_linked_deployment: true
+      trigger_pause_status: PAUSED
+      jobs_max_concurrent_runs: 1
+      pipelines_development: true
+      tags:
+        parentProject: ${var.tags_parentProject}
+        project: ${var.tags_project}
+        businessUnit: ${var.tags_businessUnit}
+        requestedBy: ${var.tags_requestedBy}
+        developer: ${var.tags_developer}
+        RemoveAfter: ${var.tags_RemoveAfter}
+        env: ${bundle.target}
+    default: true
+    workspace:
+      host: https://fe-vm-mkgs-databricks-demos.cloud.databricks.com/
+    variables:
+      catalog: mkgs_dev
+      schema: control_charts
+
+  # The 'prod' target, used for production deployment.
+  prod:
+    mode: production
+    workspace:
+      host: https://fe-vm-mkgs-databricks-demos.cloud.databricks.com
+      # We always use /Users/matthew.giglia@databricks.com for all resources to make sure we only have a single copy.
+      root_path: /Users/matthew.giglia@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      # This runs as matthew.giglia@databricks.com in production. We could also use a service principal here,
+      # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
+      user_name: matthew.giglia@databricks.com
